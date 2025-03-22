@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bike EMI Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 450px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #28a745;
+    }
+
+    .calculation {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    table th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bike EMI Calculator</h1>
+
+    <label for="bikePrice">Bike Price (₹):</label>
+    <input type="number" id="bikePrice" placeholder="Enter bike price" required>
+
+    <label for="downPayment">Down Payment (₹):</label>
+    <input type="number" id="downPayment" placeholder="Enter down payment" required>
+
+    <label for="interestRate">Interest Rate (%):</label>
+    <input type="number" id="interestRate" placeholder="Enter interest rate" step="0.01" required>
+
+    <label for="tenure">Tenure (Months):</label>
+    <select id="tenure">
+      <option value="6">6 Months</option>
+      <option value="12">12 Months</option>
+      <option value="18">18 Months</option>
+      <option value="24">24 Months</option>
+      <option value="36">36 Months</option>
+      <option value="48">48 Months</option>
+    </select>
+
+    <button id="calculateButton">Calculate EMI</button>
+
+    <div class="result" id="emiResult"></div>
+    <div class="calculation" id="calculationDetails"></div>
+    <table id="emiBreakdownTable" style="display: none;">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Principal (₹)</th>
+          <th>Interest (₹)</th>
+          <th>Remaining Balance (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="emiBreakdownBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const calculateButton = document.getElementById("calculateButton");
+      calculateButton.addEventListener("click", calculateEMI);
+
+      function calculateEMI() {
+        const bikePrice = parseFloat(document.getElementById('bikePrice').value);
+        const downPayment = parseFloat(document.getElementById('downPayment').value);
+        const interestRate = parseFloat(document.getElementById('interestRate').value);
+        const tenure = parseInt(document.getElementById('tenure').value);
+
+        if (isNaN(bikePrice) || isNaN(downPayment) || isNaN(interestRate) || isNaN(tenure)) {
+          alert("Please enter valid values for all fields.");
+          return;
+        }
+
+        const loanAmount = bikePrice - downPayment;
+        const monthlyInterestRate = (interestRate / 100) / 12;
+
+        const emi = (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
+                    (Math.pow(1 + monthlyInterestRate, tenure) - 1);
+
+        let remainingBalance = loanAmount;
+        let totalInterestPaid = 0;
+        const emiBreakdown = [];
+
+        for (let month = 1; month <= tenure; month++) {
+          const interestForMonth = remainingBalance * monthlyInterestRate;
+          const principalForMonth = emi - interestForMonth;
+          remainingBalance -= principalForMonth;
+          totalInterestPaid += interestForMonth;
+
+          if (remainingBalance < 0) remainingBalance = 0;
+
+          emiBreakdown.push({ month, principal: principalForMonth.toFixed(2), interest: interestForMonth.toFixed(2), remainingBalance: remainingBalance.toFixed(2) });
+        }
+
+        document.getElementById('emiResult').innerHTML = `EMI: ₹${emi.toFixed(2)}`;
+        document.getElementById('calculationDetails').innerHTML = `
+          <b>Loan Amount: ₹${loanAmount.toFixed(2)} <br>
+          Total Interest Paid: ₹${totalInterestPaid.toFixed(2)}<br>
+          Total Payment: ₹${(loanAmount + totalInterestPaid).toFixed(2)}</b><br>
+        `;
+
+        const tbody = document.getElementById('emiBreakdownBody');
+        tbody.innerHTML = '';
+        emiBreakdown.forEach(row => {
+          const rowElement = document.createElement("tr");
+          rowElement.innerHTML = `<td>${row.month}</td><td>${row.principal}</td><td>${row.interest}</td><td>${row.remainingBalance}</td>`;
+          tbody.appendChild(rowElement);
+        });
+
+        document.getElementById('emiBreakdownTable').style.display = 'table';
+      }
+    });
+  </script>
+</body>
+</html>
